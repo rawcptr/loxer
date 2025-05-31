@@ -116,8 +116,8 @@ pub struct Lexer<'de> {
 
 impl Token<'_> {
     pub fn unescape(s: &'_ str) -> Cow<'_, str> {
-        let _ = s;
-        todo!()
+        // no unescaping in lox
+        Cow::Borrowed(s.trim_matches('"'))
     }
 }
 
@@ -180,7 +180,10 @@ impl<'de> Iterator for Lexer<'de> {
                 c if c.is_whitespace() => continue,
                 _ => {
                     return Some(Err(miette::miette!(
-                        labels = vec![LabeledSpan::at(self.byte - c.len_utf8()..self.byte, "here")],
+                        labels = vec![LabeledSpan::at(
+                            self.byte - c.len_utf8()..self.byte,
+                            "this string literal"
+                        )],
                         "unexpected token '{c}' in input"
                     )
                     .with_source_code(self.whole.to_string())));
@@ -188,7 +191,28 @@ impl<'de> Iterator for Lexer<'de> {
             };
 
             break match started {
-                Started::String => todo!(),
+                Started::String => {
+                    if let Some(end) = self.rest.find('"') {
+                        let literal = &c_onwards[..end + 1 + 1];
+                        self.byte += end + 1;
+                        self.rest = &self.rest[end + 1..];
+                        Some(Ok(Token {
+                            origin: literal,
+                            kind: TokenKind::String,
+                        }))
+                    } else {
+                        self.byte += self.rest.len();
+                        self.rest = &self.rest[self.rest.len()..];
+                        Some(Err(miette::miette!(
+                            labels = vec![LabeledSpan::at(
+                                self.byte - c.len_utf8()..self.whole.len(),
+                                "here"
+                            )],
+                            "unterminated literal"
+                        )
+                        .with_source_code(self.whole.to_string())))
+                    }
+                }
                 Started::Slash => {
                     if self.rest.starts_with('/') {
                         let line_end = self.rest.find('\n').unwrap_or(self.rest.len());
