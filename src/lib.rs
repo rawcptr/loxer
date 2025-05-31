@@ -60,6 +60,7 @@ pub enum TokenKind {
     True,
     Var,
     While,
+    Print,
 }
 
 impl fmt::Display for Token<'_> {
@@ -86,7 +87,7 @@ impl fmt::Display for Token<'_> {
             Slash => write!(f, "SLASH {i} null"),
             Bang => write!(f, "BANG {i} null"),
             Equal => write!(f, "EQUAL {i} null"),
-            String => write!(f, "STRING \"{i}\" {}", Token::unescape(i)),
+            String => write!(f, "STRING {i} {}", Token::unescape(i)),
             Ident => write!(f, "IDENTIFIER {i} null"),
             Number(n) => write!(f, "NUMBER {i} {n}"),
             And => write!(f, "AND {i} null"),
@@ -104,6 +105,7 @@ impl fmt::Display for Token<'_> {
             True => write!(f, "TRUE {i} null"),
             Var => write!(f, "VAR {i} null"),
             While => write!(f, "WHILE {i} null"),
+            Print => write!(f, "PRINT {i} null"),
         }
     }
 }
@@ -284,6 +286,7 @@ impl<'de> Iterator for Lexer<'de> {
                         "true" => True,
                         "var" => Var,
                         "while" => While,
+                        "print" => Print,
                         _ => Ident,
                     };
 
